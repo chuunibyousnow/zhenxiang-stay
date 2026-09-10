@@ -1,7 +1,7 @@
 (() => {
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   if (motion.matches || !('IntersectionObserver' in window)) return;
-  const selector = 'main section:not(.hero) h2, main section:not(.hero) h3, main section:not(.hero) p, .card-title, .values article, .partner-details li';
+  const selector = '.reveal, .partnership h2, .partnership h3, .partnership .plan, .partner-details li';
   const candidates = Array.from(document.querySelectorAll(selector));
   // Animate each text group once; nested text inherits its parent's reveal.
   const elements = candidates.filter(el => !candidates.some(parent => parent !== el && parent.contains(el)));
@@ -30,4 +30,20 @@
       event.target.closest('.reveal-pending')?.classList.remove('reveal-pending');
     });
   } catch { showAll(); }
+  // A subtle, bounded image drift follows native scrolling without taking it over.
+  const pictures = Array.from(document.querySelectorAll('.image-motion'));
+  let queued = false;
+  function updateImages() {
+    queued = false;
+    pictures.forEach(picture => {
+      const box = picture.getBoundingClientRect();
+      if (box.bottom < 0 || box.top > window.innerHeight) return;
+      const progress = (window.innerHeight / 2 - box.top - box.height / 2) / window.innerHeight;
+      picture.style.setProperty('--image-shift', `${Math.max(-9,Math.min(9,progress*18))}px`);
+    });
+  }
+  const onScroll = () => {if(!queued && !motion.matches){queued=true;requestAnimationFrame(updateImages);}};
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll,{passive:true});
+  updateImages();
 })();
